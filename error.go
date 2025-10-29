@@ -18,6 +18,22 @@ var DefaultMaxStackDepth = 32
 // Advanced users can set this at package initialization time if needed.
 var DefaultSkipFrames = 0
 
+// DefaultStackFrameFormatter is the default function used to format stack frames.
+// By default, it formats frames in the same way as runtime/debug.Stack().
+// Advanced users can replace this with a custom formatter at package initialization time.
+//
+// Example:
+//
+//	func init() {
+//	    errstk.DefaultStackFrameFormatter = func(frame *errstk.StackFrame) string {
+//	        return fmt.Sprintf("%s:%d", frame.File, frame.LineNumber)
+//	    }
+//	}
+//
+// Note: This setting is global and affects all stack frame formatting.
+// It should be set at package initialization time only to avoid race conditions.
+var DefaultStackFrameFormatter stackFrameFormatter = defaultStackFrameFormatter
+
 // Wrap wraps the error pointed to by errp with a stack trace.
 // Designed for use with defer and named return values.
 //
@@ -97,7 +113,7 @@ func (w *withStack) Format(s fmt.State, verb rune) {
 // Stack returns the callstack formatted the same way that go does
 // in runtime/debug.Stack()
 func (w *withStack) Stack() []byte {
-	return formatStack(w.StackFrames())
+	return formatStackFrames(w.StackFrames())
 }
 
 // StackFrames returns the stack frames captured when this error was wrapped.
@@ -144,7 +160,7 @@ func ErrorStack(originalErr error) string {
 
 	WalkStack(originalErr, func(err error, frames []StackFrame) {
 		wrapped = originalErr != err
-		accum = append(accum, fmt.Sprintf("%s\n%s", err.Error(), string(formatStack(frames))))
+		accum = append(accum, fmt.Sprintf("%s\n%s", err.Error(), string(formatStackFrames(frames))))
 	})
 
 	if wrapped {
@@ -218,9 +234,9 @@ func stackFramesFromPC(stack []uintptr) []StackFrame {
 	return frames
 }
 
-// formatStack returns the callstack formatted the same way that go does
+// formatStackFrames returns the callstack formatted the same way that go does
 // in runtime/debug.Stack()
-func formatStack(frames []StackFrame) []byte {
+func formatStackFrames(frames []StackFrame) []byte {
 	buf := bytes.Buffer{}
 
 	for _, frame := range frames {

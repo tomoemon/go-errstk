@@ -490,7 +490,17 @@ func WrapWithContext(err error, ctx string) error {
 }
 ```
 
-**Note:** This setting is global and affects all subsequent calls to `With` and `Wrap`. It should be set at package initialization time only to avoid race conditions.
+### Stack Frame Formatter
+
+You can customize how stack frames are formatted:
+
+```go
+func init() {
+    errstk.DefaultStackFrameFormatter = func(frame *errstk.StackFrame) string {
+        return fmt.Sprintf("%s:%d", frame.File, frame.LineNumber)
+    }
+}
+```
 
 ## Contributing
 

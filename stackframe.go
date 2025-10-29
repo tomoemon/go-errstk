@@ -10,7 +10,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -56,14 +55,7 @@ func (frame *StackFrame) Func() *runtime.Func {
 // String returns the stackframe formatted in the same way as go does
 // in runtime/debug.Stack()
 func (frame *StackFrame) String() string {
-	str := fmt.Sprintf("%s:%d (0x%x)\n", frame.File, frame.LineNumber, frame.ProgramCounter)
-
-	source, err := frame.sourceLine()
-	if err != nil {
-		return str
-	}
-
-	return str + fmt.Sprintf("\t%s: %s\n", frame.Name, source)
+	return DefaultStackFrameFormatter(frame)
 }
 
 // SourceLine gets the line of code (from File and Line) of the original source if possible.
