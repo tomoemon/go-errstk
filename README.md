@@ -409,7 +409,7 @@ func main() {
 
 ## Best Practices
 
-### 1. Use defer for Functions with Multiple Return Points
+### 1. Use deferred `Wrap` for Functions with Multiple Return Points
 
 ```go
 func complexOperation() (result *Result, err error) {
@@ -427,7 +427,7 @@ func complexOperation() (result *Result, err error) {
 }
 ```
 
-### 2. Use WithStack for Immediate Wrapping
+### 2. Use `With` for Immediate Wrapping
 
 ```go
 func simpleOperation() error {
@@ -439,7 +439,7 @@ func simpleOperation() error {
 }
 ```
 
-### 3. Use Standard errors.New
+### 3. Use Standard `errors.New`
 
 This package intentionally does not provide a `New` function to encourage using the standard library:
 
@@ -458,8 +458,39 @@ return errstk.New("invalid input")
 You can configure the maximum stack depth globally:
 
 ```go
-errstk.MaxStackDepth = 50  // Default is 32
+errstk.DefaultMaxStackDepth = 50  // Default is 32
 ```
+
+### Skip Stack Frames
+
+You can configure the number of stack frames to skip when capturing a stack trace. This is useful when you wrap `With` or `Wrap` in your own helper functions.
+
+**Example - Custom wrapper function:**
+
+```go
+package myapp
+
+import (
+    "fmt"
+	
+    "github.com/tomoemon/go-errstk"
+)
+
+func init() {
+    // Skip one additional frame for our custom wrapper
+    errstk.DefaultSkipFrames = 1
+}
+
+// WrapWithContext Custom wrapper that adds context
+func WrapWithContext(err error, ctx string) error {
+    if err == nil {
+        return nil
+    }
+    return errstk.With(fmt.Errorf("%s: %w", ctx, err))
+}
+```
+
+**Note:** This setting affects all subsequent calls to `With` and `Wrap`. Set this at package initialization time only.
 
 ## Contributing
 

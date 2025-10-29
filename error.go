@@ -8,8 +8,15 @@ import (
 	"strings"
 )
 
-// MaxStackDepth The maximum number of stackframes on any error.
-var MaxStackDepth = 32
+// DefaultMaxStackDepth is the maximum number of stack frames to capture on any error.
+// Typically this should remain at 32, which is sufficient for most use cases.
+// Advanced users can set this at package initialization time if needed.
+var DefaultMaxStackDepth = 32
+
+// DefaultSkipFrames is the default number of stack frames to skip when capturing a stack trace.
+// Typically this should remain 0.
+// Advanced users can set this at package initialization time if needed.
+var DefaultSkipFrames = 0
 
 // Wrap wraps the error pointed to by errp with a stack trace.
 // Designed for use with defer and named return values.
@@ -29,7 +36,9 @@ var MaxStackDepth = 32
 //	}
 func Wrap(errp *error) {
 	if *errp != nil {
-		*errp = innerWithStack(*errp, 4)
+		// Skip 4 frames: Wrap -> innerWithStack -> callers -> runtime.Callers
+		const innerSkip = 4
+		*errp = innerWithStack(*errp, DefaultSkipFrames+innerSkip)
 	}
 }
 
@@ -46,7 +55,9 @@ func Wrap(errp *error) {
 //	    return errstk.With(err)
 //	}
 func With(err error) error {
-	return innerWithStack(err, 4)
+	// Skip 4 frames: With -> innerWithStack -> callers -> runtime.Callers
+	const innerSkip = 4
+	return innerWithStack(err, DefaultSkipFrames+innerSkip)
 }
 
 func innerWithStack(err error, skip int) error {
@@ -59,7 +70,7 @@ func innerWithStack(err error, skip int) error {
 	}
 	return &withStack{
 		err,
-		callers(skip, MaxStackDepth),
+		callers(skip, DefaultMaxStackDepth),
 	}
 }
 
