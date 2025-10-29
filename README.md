@@ -76,7 +76,7 @@ The `defer errstk.Wrap(&err)` pattern captures the exact line where the error is
 
 ## API Reference
 
-### With
+### `With`
 
 ```go
 func With(err error) error
@@ -102,7 +102,7 @@ fmt.Printf("%+v", wrappedErr)
 //     /path/to/file.go:30
 ```
 
-### Wrap
+### `Wrap`
 
 ```go
 func Wrap(errp *error)
@@ -129,7 +129,7 @@ func processData() (err error) {
 }
 ```
 
-### ErrorStack
+### `ErrorStack`
 
 ```go
 func ErrorStack(err error) string
@@ -165,7 +165,7 @@ fmt.Println(stackTrace)
 // ...
 ```
 
-### WalkStack
+### `WalkStack`
 
 ```go
 func WalkStack(err error, f func(error, []StackFrame))
@@ -272,7 +272,7 @@ func main() {
 }
 ```
 
-### ErrorStack Works with fmt.Errorf Wrapping
+### `ErrorStack` Works with `fmt.Errorf` Wrapping
 
 `ErrorStack` can extract stack traces even when the error has been wrapped multiple times with `fmt.Errorf`:
 
@@ -321,7 +321,7 @@ func main() {
 }
 ```
 
-### ErrorStack Works with errors.Join
+### `ErrorStack` Works with `errors.Join`
 
 `ErrorStack` can extract and combine stack traces from multiple errors joined with `errors.Join`:
 
@@ -375,7 +375,7 @@ func main() {
 }
 ```
 
-**Cleanup error pattern with errors.Join:**
+**Cleanup error pattern with `errors.Join`:**
 
 ```go
 func processResource() (err error) {
@@ -490,7 +490,7 @@ func WrapWithContext(err error, ctx string) error {
 }
 ```
 
-**Note:** This setting affects all subsequent calls to `With` and `Wrap`. Set this at package initialization time only.
+**Note:** This setting is global and affects all subsequent calls to `With` and `Wrap`. It should be set at package initialization time only to avoid race conditions.
 
 ## Contributing
 
