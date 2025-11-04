@@ -120,6 +120,7 @@ func packageAndName(fn *runtime.Func) (string, string) {
 	return pkg, name
 }
 
+//go:noinline
 func callers(skip, depth int) []uintptr {
 	s := make([]uintptr, depth)
 	length := runtime.Callers(skip, s[:])

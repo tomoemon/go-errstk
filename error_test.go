@@ -61,10 +61,10 @@ func TestWith(t *testing.T) {
 		// Check if stack trace is present in formatted output
 		formatted := fmt.Sprintf("%+v", wrappedErr)
 		if !strings.Contains(formatted, "test error") {
-			t.Error("Formatted output should contain original error message")
+			t.Errorf("Formatted output should contain original error message. Got:\n%s", formatted)
 		}
 		if !strings.Contains(formatted, "error_test.go") {
-			t.Error("Formatted output should contain stack trace")
+			t.Errorf("Formatted output should contain stack trace. Got:\n%s", formatted)
 		}
 	})
 
