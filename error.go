@@ -50,6 +50,8 @@ var DefaultStackFrameFormatter stackFrameFormatter = defaultStackFrameFormatter
 //	    }
 //	    return nil
 //	}
+//
+//go:noinline
 func Wrap(errp *error) {
 	if *errp != nil {
 		// Skip 4 frames: Wrap -> innerWithStack -> callers -> runtime.Callers
@@ -70,12 +72,15 @@ func Wrap(errp *error) {
 //	if err != nil {
 //	    return errstk.With(err)
 //	}
+//
+//go:noinline
 func With(err error) error {
 	// Skip 4 frames: With -> innerWithStack -> callers -> runtime.Callers
 	const innerSkip = 4
 	return innerWithStack(err, DefaultSkipFrames+innerSkip)
 }
 
+//go:noinline
 func innerWithStack(err error, skip int) error {
 	if err == nil {
 		return nil
