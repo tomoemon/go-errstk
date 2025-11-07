@@ -21,8 +21,24 @@ jobs:
       with:
         go-version-file: 'go.mod'
 
-    - name: Build
+    - name: Build library
       run: go build -v ./...
 
-    - name: Test
+    - name: Test library
+      run: go test -v ./...
+
+    - name: Build linter package
+      working-directory: errstklint
+      run: go build -v ./...
+
+    - name: Test linter package
+      working-directory: errstklint
+      run: go test -v ./...
+
+    - name: Build linter CLI
+      working-directory: cmd/errstklint
+      run: go build -v ./...
+
+    - name: Test linter CLI
+      working-directory: cmd/errstklint
       run: go test -v ./...
