@@ -502,6 +502,36 @@ func init() {
 }
 ```
 
+## Linter Tool
+
+**errstklint** is a linter that ensures all functions returning errors include `defer errstk.Wrap(&err)` for proper stack trace capture.
+
+### Installation
+
+```bash
+go install github.com/tomoemon/go-errstk/cmd/errstklint@latest
+```
+
+### Quick Usage
+
+```bash
+# Standalone
+errstklint ./...
+
+# With exclusions for generated code
+errstklint -exclude="generated/*.go,**/mock_*.go" ./...
+
+# As golangci-lint plugin
+golangci-lint custom  # See documentation for setup
+./.golangci-lint-custom run
+```
+
+### Documentation
+
+For detailed usage and golangci-lint integration:
+- [Standalone CLI documentation](cmd/errstklint/README.md)
+- [golangci-lint plugin documentation](errstklint/README.md)
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
