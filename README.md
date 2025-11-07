@@ -10,6 +10,7 @@ errstk is designed with the following principles:
 2. **Standard library first**: Encourage use of `errors.New`, `fmt.Errorf` and `errors.Join`
 3. **Compatibility**: Full support for Go 1.13+ error handling features
 4. **Defer-friendly**: Accurate line number capture with defer usage
+5. **Enforced correctness**: Includes a linter to ensure proper stack trace capture
 
 ## Installation
 
