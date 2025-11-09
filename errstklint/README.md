@@ -88,7 +88,79 @@ func GetUser(id string) (user *User, err error) {
 }
 ```
 
-## File Exclusion
+## Excluding Specific Functions or Files
+
+### Using nolint Directives (Recommended)
+
+You can exclude specific functions using comment directives compatible with golangci-lint:
+
+**Function-level exclusion:**
+```go
+//nolint:errstklint
+func HelperFunction() (err error) {
+    // No defer required - this function is excluded
+    return nil
+}
+
+// Alternative format (staticcheck style)
+//lint:ignore errstklint performance-critical code path
+func FastPath() (err error) {
+    return nil
+}
+```
+
+**File-level exclusion:**
+```go
+//nolint:errstklint
+package testhelpers
+
+// All functions in this file are excluded
+
+func Helper1() (err error) { return nil }
+func Helper2() (err error) { return nil }
+```
+
+**Alternative file-level format:**
+```go
+//lint:file-ignore errstklint generated code
+package generated
+```
+
+**Multiple linters:**
+```go
+//nolint:errstklint,unused,staticcheck
+func TemporaryCode() (err error) {
+    return nil
+}
+```
+
+### Using exclusion rules in golangci-lint
+
+When using with golangci-lint, you can also use exclusion rules in `.golangci.yml`:
+
+```yaml
+linters:
+  exclusions:
+    rules:
+      # Disable for test files
+      - path: '(.+)_test\.go'
+        linters:
+          - errstklint
+
+      # Disable for specific directories
+      - path: 'internal/legacy/'
+        linters:
+          - errstklint
+
+      # Disable for generated code
+      - path: '.*\.pb\.go$'
+        linters:
+          - errstklint
+```
+
+Note: Exclusion rules are handled by golangci-lint core, not by errstklint itself.
+
+## File Pattern Exclusion
 
 ### CLI
 
