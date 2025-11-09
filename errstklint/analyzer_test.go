@@ -11,6 +11,11 @@ func TestAnalyzer(t *testing.T) {
 	analysistest.Run(t, testdata, Analyzer, "a")
 }
 
+func TestAnalyzerWithNolint(t *testing.T) {
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, Analyzer, "c")
+}
+
 func TestShouldExclude(t *testing.T) {
 	tests := []struct {
 		name     string

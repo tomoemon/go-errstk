@@ -527,6 +527,24 @@ golangci-lint custom  # See documentation for setup
 ./.golangci-lint-custom run
 ```
 
+### Excluding Specific Functions
+
+Use nolint directives compatible with golangci-lint:
+
+```go
+//nolint:errstklint
+func HelperFunction() (err error) {
+    // This function is excluded from linting
+    return nil
+}
+
+// File-level exclusion
+//nolint:errstklint
+package testhelpers
+```
+
+See [full documentation](errstklint/README.md) for more exclusion options including `//lint:ignore` and `exclude-rules`.
+
 ### Documentation
 
 For detailed usage and golangci-lint integration:
