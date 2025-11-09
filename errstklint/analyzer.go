@@ -300,6 +300,8 @@ func matchDoubleStarPattern(filename, pattern string) bool {
 			if strings.HasSuffix(filename, part) {
 				return true
 			}
+			// Last part didn't match
+			return false
 		} else {
 			// Middle parts: must appear in order
 			idx := strings.Index(filename[currentPos:], part)
@@ -310,7 +312,8 @@ func matchDoubleStarPattern(filename, pattern string) bool {
 		}
 	}
 
-	return true
+	// If we get here, all parts were empty (shouldn't happen in practice)
+	return false
 }
 
 // SetConfig sets the configuration for the analyzer (used by golangci-lint plugin)
