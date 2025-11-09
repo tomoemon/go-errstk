@@ -10,6 +10,7 @@ errstk is designed with the following principles:
 2. **Standard library first**: Encourage use of `errors.New`, `fmt.Errorf` and `errors.Join`
 3. **Compatibility**: Full support for Go 1.13+ error handling features
 4. **Defer-friendly**: Accurate line number capture with defer usage
+5. **Enforced correctness**: Includes a linter to ensure proper stack trace capture
 
 ## Installation
 
@@ -501,6 +502,36 @@ func init() {
     }
 }
 ```
+
+## Linter Tool
+
+**errstklint** is a linter that ensures all functions returning errors include `defer errstk.Wrap(&err)` for proper stack trace capture.
+
+### Installation
+
+```bash
+go install github.com/tomoemon/go-errstk/cmd/errstklint@latest
+```
+
+### Quick Usage
+
+```bash
+# Standalone
+errstklint ./...
+
+# With exclusions for generated code
+errstklint -exclude="generated/*.go,**/mock_*.go" ./...
+
+# As golangci-lint plugin
+golangci-lint custom  # See documentation for setup
+./.golangci-lint-custom run
+```
+
+### Documentation
+
+For detailed usage and golangci-lint integration:
+- [Standalone CLI documentation](cmd/errstklint/README.md)
+- [golangci-lint plugin documentation](errstklint/README.md)
 
 ## Contributing
 
