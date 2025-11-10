@@ -97,10 +97,10 @@ wrappedErr := errstk.With(err)
 fmt.Printf("%+v", wrappedErr)
 // Output:
 // database error
-// main.myFunction
-//     /path/to/file.go:42
-// main.main
-//     /path/to/file.go:30
+// main.myFunction()
+//     /path/to/file.go:42 +0x1234567
+// main.main()
+//     /path/to/file.go:30 +0x7654321
 ```
 
 ### `Wrap`
@@ -161,8 +161,8 @@ fmt.Println(stackTrace)
 // service startup failed: failed to initialize: database connection failed
 //
 // database connection failed
-// main.go:10 (0x1234567)
-//     main: err1 := errstk.With(errors.New("database connection failed"))
+// main.layer1()
+//     /path/to/main.go:10 +0x1234567
 // ...
 ```
 
@@ -233,8 +233,8 @@ fmt.Printf("%s\n", err)   // something went wrong
 fmt.Printf("%v\n", err)   // something went wrong
 fmt.Printf("%q\n", err)   // "something went wrong"
 fmt.Printf("%+v\n", err)  // *errors.errorString something went wrong
-                          // main.myFunction
-                          //     /path/to/file.go:42
+                          // main.myFunction()
+                          //     /path/to/file.go:42 +0x1234567
                           // ...
 ```
 
