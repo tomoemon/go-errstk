@@ -8,10 +8,11 @@ type stackFrameFormatter func(frame *StackFrame) string
 // defaultStackFrameFormatter returns the stack frame formatted in the same way as Go does
 // in runtime/debug.Stack().
 func defaultStackFrameFormatter(frame *StackFrame) string {
-	str := fmt.Sprintf("%s:%d (0x%x)\n", frame.File, frame.LineNumber, frame.ProgramCounter)
-	source, err := frame.SourceLine()
-	if err != nil {
-		return str
+	// Format: package.FunctionName()
+	//     file/path.go:123 +0xhex
+	name := frame.Name
+	if frame.Package != "" {
+		name = frame.Package + "." + frame.Name
 	}
-	return str + fmt.Sprintf("\t%s: %s\n", frame.Name, source)
+	return fmt.Sprintf("%s()\n\t%s:%d +0x%x\n", name, frame.File, frame.LineNumber, frame.ProgramCounter)
 }
