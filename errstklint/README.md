@@ -26,33 +26,56 @@ See [cmd/errstklint/README.md](../cmd/errstklint/README.md) for more CLI options
 
 ## Usage as golangci-lint Plugin
 
+**Requirements:** golangci-lint v2.0.0 or later
+
 ### Step 1: Create `.custom-gcl.yml`
 
 ```yaml
-version: v1.62.2
+version: v2.6.1
 plugins:
-  - module: 'github.com/tomoemon/go-errstk/errstklint'
+  - module: 'github.com/tomoemon/go-errstk'
     import: 'github.com/tomoemon/go-errstk/errstklint'
-    version: v1.0.0
+    version: v0.2.3
 ```
 
-### Step 2: Configure `.golangci.yml` (optional)
+For local development, use `path` instead of `version`:
 
 ```yaml
+version: v2.6.1
+plugins:
+  - module: 'github.com/tomoemon/go-errstk'
+    import: 'github.com/tomoemon/go-errstk/errstklint'
+    path: /path/to/go-errstk
+```
+
+### Step 2: Configure `.golangci.yml`
+
+```yaml
+version: "2"
+
 linters:
+  enable:
+    - errstklint
   settings:
-    errstklint:
-      exclude:
-        - "generated/*.go"
-        - "**/mock_*.go"
-        - "**/*_test.go"
+    custom:
+      errstklint:
+        type: "module"
+        description: "checks that functions returning errors have defer errstk.Wrap(&err)"
+        settings:
+          exclude:
+            - "generated/*.go"
+            - "**/mock_*.go"
+            - "**/*_test.go"
 ```
 
 ### Step 3: Build and run
 
 ```bash
+# Build custom golangci-lint with errstklint
 golangci-lint custom
-./.golangci-lint-custom run
+
+# Run the custom binary
+./custom-gcl run ./...
 ```
 
 ## Usage as a Library

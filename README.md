@@ -522,9 +522,9 @@ errstklint ./...
 # With exclusions for generated code
 errstklint -exclude="generated/*.go,**/mock_*.go" ./...
 
-# As golangci-lint plugin
+# As golangci-lint plugin (requires golangci-lint v2.0.0+)
 golangci-lint custom  # See documentation for setup
-./.golangci-lint-custom run
+./custom-gcl run
 ```
 
 ### Excluding Specific Functions
