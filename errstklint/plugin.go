@@ -1,49 +1,38 @@
 package errstklint
 
 import (
-	"encoding/json"
-
+	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
 )
 
-// New returns the analyzer for golangci-lint plugin system.
+func init() {
+	register.Plugin("errstklint", New)
+}
+
+// ErrstklintPlugin is the plugin implementation for golangci-lint
+type ErrstklintPlugin struct {
+	settings Config
+}
+
+// New returns the plugin instance for golangci-lint plugin system.
 // This function is called by golangci-lint when loading the plugin.
-// The conf parameter contains the configuration from .golangci.yml
-func New(conf any) ([]*analysis.Analyzer, error) {
-	// Parse configuration if provided
-	if conf != nil {
-		cfg := &Config{}
-
-		// golangci-lint passes configuration as map[string]any
-		if confMap, ok := conf.(map[string]any); ok {
-			// Try to parse exclude patterns
-			if excludeVal, ok := confMap["exclude"]; ok {
-				switch v := excludeVal.(type) {
-				case []any:
-					// Convert []any to []string
-					cfg.Exclude = make([]string, 0, len(v))
-					for _, item := range v {
-						if str, ok := item.(string); ok {
-							cfg.Exclude = append(cfg.Exclude, str)
-						}
-					}
-				case []string:
-					cfg.Exclude = v
-				case string:
-					// Single pattern as string
-					cfg.Exclude = []string{v}
-				}
-			}
-		} else {
-			// Fallback: try JSON unmarshaling
-			data, err := json.Marshal(conf)
-			if err == nil {
-				_ = json.Unmarshal(data, cfg)
-			}
-		}
-
-		SetConfig(cfg)
+func New(settings any) (register.LinterPlugin, error) {
+	s, err := register.DecodeSettings[Config](settings)
+	if err != nil {
+		return nil, err
 	}
 
+	return &ErrstklintPlugin{settings: s}, nil
+}
+
+// BuildAnalyzers returns the analyzers for this plugin
+func (p *ErrstklintPlugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
+	// Apply configuration to the analyzer
+	SetConfig(&p.settings)
 	return []*analysis.Analyzer{Analyzer}, nil
+}
+
+// GetLoadMode returns the load mode for this plugin
+func (p *ErrstklintPlugin) GetLoadMode() string {
+	return register.LoadModeTypesInfo
 }
