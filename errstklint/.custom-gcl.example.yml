@@ -1,0 +1,5 @@
+version: v2.6.1
+plugins:
+  - module: 'github.com/tomoemon/go-errstk'
+    import: 'github.com/tomoemon/go-errstk/errstklint'
+    version: v0.2.3
