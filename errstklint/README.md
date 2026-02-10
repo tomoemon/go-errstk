@@ -18,6 +18,9 @@ go install github.com/tomoemon/go-errstk/cmd/errstklint@latest
 # Run
 errstklint ./...
 
+# Auto-fix
+errstklint -fix ./...
+
 # Exclude files
 errstklint -exclude="generated/*.go,**/mock_*.go" ./...
 ```
@@ -27,6 +30,8 @@ See [cmd/errstklint/README.md](../cmd/errstklint/README.md) for more CLI options
 ## Usage as golangci-lint Plugin
 
 **Requirements:** golangci-lint v2.0.0 or later
+
+Sample configuration files are available at [.custom-gcl.example.yml](.custom-gcl.example.yml) and [.golangci.example.yml](.golangci.example.yml).
 
 ### Step 1: Create `.custom-gcl.yml`
 
@@ -86,6 +91,27 @@ import "github.com/tomoemon/go-errstk/errstklint"
 // Use the analyzer in your tool
 analyzer := errstklint.Analyzer
 ```
+
+## Auto-fix
+
+The `-fix` flag (or `--fix` with golangci-lint) automatically fixes violations:
+
+- Unnamed return values are converted to named returns (`error` → `err error`, others → `_ type`)
+- `defer errstk.Wrap(&err)` is inserted at the beginning of the function body
+- `import "github.com/tomoemon/go-errstk"` is added if not already present
+
+```go
+// Before
+func GetUser(id string) (*User, error) { ... }
+
+// After fix
+func GetUser(id string) (_ *User, err error) {
+    defer errstk.Wrap(&err)
+    ...
+}
+```
+
+Functions with multiple `error` return values are not auto-fixed and will show a warning.
 
 ## What it checks
 

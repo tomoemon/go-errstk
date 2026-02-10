@@ -1,0 +1,12 @@
+package d
+
+import (
+	"fmt"
+	"github.com/tomoemon/go-errstk"
+)
+
+// Case F: Grouped import without errstk
+func GroupedImportFunc() (_ string, err error) {
+	defer errstk.Wrap(&err) // want "function GroupedImportFunc returns error but missing defer errstk.Wrap\\(&err\\)"
+	return fmt.Sprintf("hello"), nil
+}

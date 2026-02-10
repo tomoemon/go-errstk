@@ -1,0 +1,14 @@
+version: "2"
+
+linters:
+  enable:
+    - errstklint
+  settings:
+    custom:
+      errstklint:
+        type: "module"
+        description: "checks that functions returning errors have defer errstk.Wrap(&err)"
+        settings:
+          exclude:
+            - "generated/*.go"
+            - "**/mock_*.go"

@@ -1,0 +1,11 @@
+package d
+
+import "fmt"
+import "github.com/tomoemon/go-errstk"
+
+// Case G: Single import without errstk
+func SingleImportFunc() (err error) {
+	defer errstk.Wrap(&err) // want "function SingleImportFunc returns error but missing defer errstk.Wrap\\(&err\\)"
+	fmt.Println("hello")
+	return nil
+}

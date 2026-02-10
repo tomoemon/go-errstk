@@ -2,9 +2,11 @@ package errstklint
 
 import (
 	"flag"
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -131,9 +133,45 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 		// Check for defer errstk.Wrap()
 		if !hasDeferErrStkWrap(funcDecl, errorReturnName) {
-			pass.Reportf(funcDecl.Pos(),
+			message := fmt.Sprintf(
 				"function %s returns error but missing defer errstk.Wrap(&%s)",
 				funcDecl.Name.Name, errorReturnName)
+
+			// Skip auto-fix for functions with multiple error return values
+			if countErrorReturns(funcDecl, pass.TypesInfo) > 1 {
+				pass.Report(analysis.Diagnostic{
+					Pos:     funcDecl.Pos(),
+					Message: message + " (auto-fix unavailable: multiple error return values)",
+				})
+				return
+			}
+
+			var textEdits []analysis.TextEdit
+
+			// If returns are unnamed, add edits to name them
+			if !isNamedReturns(funcDecl.Type.Results) {
+				textEdits = append(textEdits, buildReturnNamingEdits(funcDecl, pass)...)
+			}
+
+			// Add the defer statement
+			textEdits = append(textEdits, buildDeferTextEdit(funcDecl, errorReturnName))
+
+			// Add import if needed
+			file := findFileForPos(pass, funcDecl.Pos())
+			if file != nil {
+				if importEdit := buildImportTextEdit(file); importEdit != nil {
+					textEdits = append(textEdits, *importEdit)
+				}
+			}
+
+			pass.Report(analysis.Diagnostic{
+				Pos:     funcDecl.Pos(),
+				Message: message,
+				SuggestedFixes: []analysis.SuggestedFix{{
+					Message:   "Add defer errstk.Wrap(&" + errorReturnName + ")",
+					TextEdits: textEdits,
+				}},
+			})
 		}
 	})
 
@@ -476,4 +514,152 @@ func isPositionIgnored(pos token.Position, ranges []ignoredRange) bool {
 		}
 	}
 	return false
+}
+
+// findFileForPos returns the *ast.File containing the given position.
+func findFileForPos(pass *analysis.Pass, pos token.Pos) *ast.File {
+	for _, f := range pass.Files {
+		if f.FileStart <= pos && pos < f.FileEnd {
+			return f
+		}
+	}
+	return nil
+}
+
+// countErrorReturns counts how many return values have the error type.
+func countErrorReturns(funcDecl *ast.FuncDecl, info *types.Info) int {
+	if funcDecl.Type == nil || funcDecl.Type.Results == nil {
+		return 0
+	}
+	count := 0
+	for _, field := range funcDecl.Type.Results.List {
+		typ := info.TypeOf(field.Type)
+		if typ != nil && isErrorType(typ) {
+			count++
+		}
+	}
+	return count
+}
+
+// isNamedReturns checks whether the function's return parameters are all named.
+func isNamedReturns(results *ast.FieldList) bool {
+	if results == nil || len(results.List) == 0 {
+		return false
+	}
+	for _, field := range results.List {
+		if len(field.Names) == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// buildReturnNamingEdits returns TextEdits to convert unnamed returns to named returns.
+func buildReturnNamingEdits(funcDecl *ast.FuncDecl, pass *analysis.Pass) []analysis.TextEdit {
+	results := funcDecl.Type.Results
+	if results == nil {
+		return nil
+	}
+
+	if results.Opening.IsValid() {
+		// Has parentheses: (string, error) -> (_ string, err error)
+		var parts []string
+		for _, field := range results.List {
+			typeName := sourceText(pass, field.Type.Pos(), field.Type.End())
+			if isErrorType(pass.TypesInfo.TypeOf(field.Type)) {
+				parts = append(parts, "err "+typeName)
+			} else {
+				parts = append(parts, "_ "+typeName)
+			}
+		}
+		newText := strings.Join(parts, ", ")
+		return []analysis.TextEdit{{
+			Pos:     results.Opening + 1,
+			End:     results.Closing,
+			NewText: []byte(newText),
+		}}
+	}
+
+	// No parentheses: single `error` return -> `(err error)`
+	field := results.List[0]
+	return []analysis.TextEdit{{
+		Pos:     field.Type.Pos(),
+		End:     field.Type.End(),
+		NewText: []byte("(err error)"),
+	}}
+}
+
+// buildDeferTextEdit returns a TextEdit to insert the defer statement.
+func buildDeferTextEdit(funcDecl *ast.FuncDecl, errorVarName string) analysis.TextEdit {
+	return analysis.TextEdit{
+		Pos:     funcDecl.Body.Lbrace + 1,
+		End:     funcDecl.Body.Lbrace + 1,
+		NewText: []byte("\n\tdefer errstk.Wrap(&" + errorVarName + ")"),
+	}
+}
+
+// hasErrstkImport checks if the file already imports errstk.
+func hasErrstkImport(file *ast.File) bool {
+	for _, imp := range file.Imports {
+		if imp.Path.Value == `"github.com/tomoemon/go-errstk"` {
+			return true
+		}
+	}
+	return false
+}
+
+// buildImportTextEdit returns a TextEdit to add the errstk import, or nil if already imported.
+func buildImportTextEdit(file *ast.File) *analysis.TextEdit {
+	if hasErrstkImport(file) {
+		return nil
+	}
+
+	for _, decl := range file.Decls {
+		gd, ok := decl.(*ast.GenDecl)
+		if !ok || gd.Tok != token.IMPORT {
+			continue
+		}
+		if gd.Lparen.IsValid() {
+			// Grouped import: insert before closing paren
+			return &analysis.TextEdit{
+				Pos:     gd.Rparen,
+				End:     gd.Rparen,
+				NewText: []byte("\t\"github.com/tomoemon/go-errstk\"\n"),
+			}
+		}
+		// Single-line import: insert after the import decl
+		return &analysis.TextEdit{
+			Pos:     gd.End(),
+			End:     gd.End(),
+			NewText: []byte("\nimport \"github.com/tomoemon/go-errstk\""),
+		}
+	}
+
+	// No imports at all: insert after package name
+	return &analysis.TextEdit{
+		Pos:     file.Name.End(),
+		End:     file.Name.End(),
+		NewText: []byte("\n\nimport \"github.com/tomoemon/go-errstk\""),
+	}
+}
+
+// sourceText extracts the source code between two positions.
+func sourceText(pass *analysis.Pass, start, end token.Pos) string {
+	tf := pass.Fset.File(start)
+	if tf == nil {
+		return ""
+	}
+	var content []byte
+	var err error
+	if pass.ReadFile != nil {
+		content, err = pass.ReadFile(tf.Name())
+	} else {
+		content, err = os.ReadFile(tf.Name())
+	}
+	if err != nil {
+		return ""
+	}
+	startOff := tf.Offset(start)
+	endOff := tf.Offset(end)
+	return string(content[startOff:endOff])
 }

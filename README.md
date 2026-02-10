@@ -519,13 +519,40 @@ go install github.com/tomoemon/go-errstk/cmd/errstklint@latest
 # Standalone
 errstklint ./...
 
+# Auto-fix: add named returns and defer errstk.Wrap(&err)
+errstklint -fix ./...
+
 # With exclusions for generated code
 errstklint -exclude="generated/*.go,**/mock_*.go" ./...
 
 # As golangci-lint plugin (requires golangci-lint v2.0.0+)
 golangci-lint custom  # See documentation for setup
 ./custom-gcl run
+./custom-gcl run --fix  # Auto-fix with golangci-lint
 ```
+
+### Auto-fix
+
+The `-fix` flag automatically applies the following fixes:
+
+- Unnamed return values are converted to named returns (`error` becomes `err error`, others become `_ type`)
+- `defer errstk.Wrap(&err)` is inserted at the beginning of the function body
+- `import "github.com/tomoemon/go-errstk"` is added if not already present
+
+```go
+// Before
+func GetUser(id string) (*User, error) {
+    // ...
+}
+
+// After fix
+func GetUser(id string) (_ *User, err error) {
+    defer errstk.Wrap(&err)
+    // ...
+}
+```
+
+Note: Functions with multiple `error` return values are not auto-fixed and will show a warning.
 
 ### Excluding Specific Functions
 

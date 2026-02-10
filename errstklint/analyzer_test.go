@@ -11,6 +11,11 @@ func TestAnalyzer(t *testing.T) {
 	analysistest.Run(t, testdata, Analyzer, "a")
 }
 
+func TestAnalyzerWithSuggestedFixes(t *testing.T) {
+	testdata := analysistest.TestData()
+	analysistest.RunWithSuggestedFixes(t, testdata, Analyzer, "d")
+}
+
 func TestAnalyzerWithNolint(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, Analyzer, "c")

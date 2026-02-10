@@ -14,6 +14,9 @@ go install github.com/tomoemon/go-errstk/cmd/errstklint@latest
 # Check all packages
 errstklint ./...
 
+# Auto-fix violations
+errstklint -fix ./...
+
 # Exclude generated files
 errstklint -exclude="generated/*.go,**/mock_*.go" ./...
 
@@ -23,6 +26,7 @@ go vet -vettool=$(which errstklint) ./...
 
 ## Options
 
+- `-fix`: Automatically fix violations (add named returns and `defer errstk.Wrap(&err)`)
 - `-exclude`: Comma-separated glob patterns to exclude files
   - Example: `generated/*.go`, `**/mock_*.go`, `**/*_test.go`
 
