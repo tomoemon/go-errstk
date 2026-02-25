@@ -153,13 +153,18 @@ func (w *withStack) Unwrap() error {
 // the full context. This avoids losing wrapper messages while preventing duplication
 // when the error itself has a stack trace.
 //
-// Returns an empty string if no stack trace is found in the error chain.
+// If no stack trace is found in the error chain, returns the error message from Error().
+// Returns an empty string if err is nil.
 //
 // Examples:
 //   - Unwrapped error with stack: "error msg\nstack trace"
 //   - fmt.Errorf wrapped: "outer: inner\n\ninner\nstack trace"
 //   - errors.Join: "err1\nerr2\n\nerr1\nstack1\n\nerr2\nstack2"
 func ErrorStack(originalErr error) string {
+	if originalErr == nil {
+		return ""
+	}
+
 	var accum []string
 	var wrapped bool
 
@@ -168,6 +173,9 @@ func ErrorStack(originalErr error) string {
 		accum = append(accum, fmt.Sprintf("%s\n%s", err.Error(), string(formatStackFrames(frames))))
 	})
 
+	if len(accum) == 0 {
+		return originalErr.Error()
+	}
 	if wrapped {
 		accum = append([]string{originalErr.Error() + "\n"}, accum...)
 	}

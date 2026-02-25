@@ -534,6 +534,21 @@ func TestWrapWithVariableRedeclaration(t *testing.T) {
 		}
 	})
 
+	t.Run("ErrorStack returns error message for unwrapped error", func(t *testing.T) {
+		plainErr := errors.New("plain error without stack")
+		result := ErrorStack(plainErr)
+		if result != "plain error without stack" {
+			t.Errorf("ErrorStack should return error message for unwrapped error, got: %q", result)
+		}
+	})
+
+	t.Run("ErrorStack returns empty string for nil", func(t *testing.T) {
+		result := ErrorStack(nil)
+		if result != "" {
+			t.Errorf("ErrorStack(nil) should return empty string, got: %q", result)
+		}
+	})
+
 	t.Run("ErrorStack works with errors.Join", func(t *testing.T) {
 		// Simulate a function that processes a file and may have cleanup errors
 		processFile := func() (err error) {
