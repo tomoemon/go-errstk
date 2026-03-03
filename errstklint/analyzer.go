@@ -154,7 +154,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 
 			// Add the defer statement
-			textEdits = append(textEdits, buildDeferTextEdit(funcDecl, errorReturnName))
+			textEdits = append(textEdits, buildDeferTextEdit(funcDecl, errorReturnName, pass))
 
 			// Add import if needed
 			file := findFileForPos(pass, funcDecl.Pos())
@@ -590,10 +590,29 @@ func buildReturnNamingEdits(funcDecl *ast.FuncDecl, pass *analysis.Pass) []analy
 }
 
 // buildDeferTextEdit returns a TextEdit to insert the defer statement.
-func buildDeferTextEdit(funcDecl *ast.FuncDecl, errorVarName string) analysis.TextEdit {
+// For one-liner functions (opening and closing brace on the same line),
+// the entire body content is reformatted to multi-line.
+func buildDeferTextEdit(funcDecl *ast.FuncDecl, errorVarName string, pass *analysis.Pass) analysis.TextEdit {
+	lbrace := funcDecl.Body.Lbrace
+	rbrace := funcDecl.Body.Rbrace
+
+	lbracePos := pass.Fset.Position(lbrace)
+	rbracePos := pass.Fset.Position(rbrace)
+
+	if lbracePos.Line == rbracePos.Line {
+		// One-liner: extract body content and reformat to multi-line
+		bodyContent := strings.TrimSpace(sourceText(pass, lbrace+1, rbrace))
+		newBody := "\n\tdefer errstk.Wrap(&" + errorVarName + ")\n\t" + bodyContent + "\n"
+		return analysis.TextEdit{
+			Pos:     lbrace + 1,
+			End:     rbrace,
+			NewText: []byte(newBody),
+		}
+	}
+
 	return analysis.TextEdit{
-		Pos:     funcDecl.Body.Lbrace + 1,
-		End:     funcDecl.Body.Lbrace + 1,
+		Pos:     lbrace + 1,
+		End:     lbrace + 1,
 		NewText: []byte("\n\tdefer errstk.Wrap(&" + errorVarName + ")"),
 	}
 }

@@ -1,0 +1,14 @@
+package d
+
+import "bytes"
+import "github.com/tomoemon/go-errstk"
+
+type batchResponseRecorder struct {
+	body bytes.Buffer
+}
+
+// Case H: One-liner method with unnamed multiple returns
+func (r *batchResponseRecorder) Write(b []byte) (_ int, err error) {
+	defer errstk.Wrap(&err)
+	return r.body.Write(b)
+} // want "function Write returns error but missing defer errstk.Wrap\\(&err\\)"
