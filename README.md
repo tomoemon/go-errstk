@@ -97,6 +97,7 @@ wrappedErr := errstk.With(err)
 fmt.Printf("%+v", wrappedErr)
 // Output:
 // database error
+// goroutine 1 [running]:
 // main.myFunction()
 //     /path/to/file.go:42 +0x1234567
 // main.main()
@@ -161,6 +162,7 @@ fmt.Println(stackTrace)
 // service startup failed: failed to initialize: database connection failed
 //
 // database connection failed
+// goroutine 1 [running]:
 // main.layer1()
 //     /path/to/main.go:10 +0x1234567
 // ...
@@ -233,6 +235,7 @@ fmt.Printf("%s\n", err)   // something went wrong
 fmt.Printf("%v\n", err)   // something went wrong
 fmt.Printf("%q\n", err)   // "something went wrong"
 fmt.Printf("%+v\n", err)  // *errors.errorString something went wrong
+                          // goroutine 1 [running]:
                           // main.myFunction()
                           //     /path/to/file.go:42 +0x1234567
                           // ...
@@ -364,11 +367,13 @@ func main() {
         // write failed: permission denied
         //
         // read failed: file not found
+        // goroutine 1 [running]:
         // processFile
         //     /path/to/file.go:10
         // ...
         //
         // write failed: permission denied
+        // goroutine 1 [running]:
         // processFile
         //     /path/to/file.go:15
         // ...
