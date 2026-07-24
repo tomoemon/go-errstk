@@ -247,10 +247,19 @@ func stackFramesFromPC(stack []uintptr) []StackFrame {
 	return frames
 }
 
+// goroutineHeader is prepended to formatted stack traces so that the output
+// matches the shape of runtime/debug.Stack(). Error Reporting on Google Cloud
+// only recognizes a Go stack trace when it starts with (or contains) a line
+// of this form; without it, otherwise well-formed traces are silently ignored.
+// The goroutine ID is not meaningful here (the original goroutine may already
+// have returned by the time this is logged), so a fixed placeholder is used.
+const goroutineHeader = "goroutine 1 [running]:\n"
+
 // formatStackFrames returns the callstack formatted the same way that go does
 // in runtime/debug.Stack()
 func formatStackFrames(frames []StackFrame) []byte {
 	buf := bytes.Buffer{}
+	buf.WriteString(goroutineHeader)
 
 	for _, frame := range frames {
 		buf.WriteString(frame.String())
