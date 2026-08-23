@@ -12,6 +12,70 @@ errstk is designed with the following principles:
 4. **Defer-friendly**: Accurate line number capture with defer usage
 5. **Enforced correctness**: Includes a linter to ensure proper stack trace capture
 
+## Comparison with Other Libraries
+
+Comparison as of August 2026.
+
+The Go standard library still does not attach stack traces to errors. Go 1.26 added `errors.AsType`,
+and Go 1.27 only changed the runtime traceback header; neither touches error traces. The two proposals
+that would bring traces into the standard library, [#60873](https://github.com/golang/go/issues/60873)
+and [#63358](https://github.com/golang/go/issues/63358), have been open without a decision since 2023.
+Capturing a stack trace therefore still requires a third-party package.
+
+| Library | Trace model | Where you annotate | Interop with `fmt.Errorf("%w")` / `errors.Join` | Tooling to enforce or automate it | API surface |
+| --- | --- | --- | --- | --- | --- |
+| errstk | Full stack, captured once per error chain | One `defer errstk.Wrap(&err)` per function | Yes, by design | Linter with `-fix`, standalone CLI, golangci-lint plugin | 4 functions |
+| [bracesdev/errtrace](https://github.com/bracesdev/errtrace) | Return-path trace, not a stack trace | Every `return` statement | Traversed, but the trace needs `errtrace.Wrap` at each return | CLI rewrite (`errtrace -w ./...`) and `go build -toolexec=errtrace` | Small |
+| [lainio/err2](https://github.com/lainio/err2) | Full stack and/or return trace | One `defer err2.Handle(&err)` per function, plus `try.To` at every call site | Yes | None (editor snippets only) | Large (`try`, `assert`) |
+| [rotisserie/eris](https://github.com/rotisserie/eris) | Full stack at creation | Every `eris.Wrap` site | Partial; formatting assumes eris errors | None | Medium, formatting-heavy |
+| [cockroachdb/errors](https://github.com/cockroachdb/errors) | Full stack at creation | Drop-in `errors.*` replacements | Yes | None | Very large |
+| [samber/oops](https://github.com/samber/oops) | Full stack plus structured context | Builder chain at each site | Yes | None | Large |
+| [newmo-oss/ergo](https://github.com/newmo-oss/ergo) | Full stack at creation | Every `ergo.New` / `ergo.Wrap` site | Yes | `ergocheck` analyzer | Medium |
+
+Note that errstk, like every library here that wraps, changes the error value, so `err == ErrSentinel`
+and type assertions must be replaced with `errors.Is` and `errors.As`. See
+[Working with Error Chains](#working-with-error-chains).
+
+### Closest alternatives
+
+- errtrace shares the most design ground with errstk: a minimal API plus tooling that inserts the calls
+  for you. It differs in three ways that matter. It records the return path rather than a stack, so the
+  output only makes sense through its own formatter; it must wrap at every `return` statement instead of
+  once per function; and it reads stack information through Go assembly, limiting it to `amd64` and
+  `arm64` unless you build with `-tags safe`, which costs performance. Its README describes the project
+  as experimental. errstk is plain Go with no build tags and works on every architecture.
+- err2 uses the same `defer` shape as errstk, but pairs it with `try.To()`, which turns error returns
+  into panics that the deferred handler recovers. errstk deliberately keeps the standard
+  `if err != nil { return err }` control flow and never panics.
+- ergo also ships a companion analyzer, so the "library plus static analysis" idea is not unique to
+  errstk. It aims at structured errors with attributes and error codes, which is a larger surface than
+  stack traces alone.
+- cockroachdb/errors is the choice when you need PII-safe reporting, Sentry integration, or errors that
+  survive transport across a network. It is far more than a stack trace.
+- eris and oops focus on output formatting and structured context respectively, rather than on
+  minimizing the API.
+
+### When errstk is a good fit
+
+- You want to keep writing `errors.New`, `fmt.Errorf("%w")` and `errors.Join`, and only add the one
+  thing the standard library is missing.
+- You want a single `defer errstk.Wrap(&err)` per function rather than an annotation at every return.
+- You want the missing annotations found for you, and added for you: `errstklint` reports functions
+  returning `error` without the `defer`, and `-fix` rewrites them, including converting unnamed returns
+  to named ones and adding the import.
+- You send errors to a service that expects Go's native stack format. errstk formats traces the same way
+  `runtime/debug.Stack()` does and prepends a `goroutine` header, so the output is accepted as-is by
+  Cloud Error Reporting, and `Callers()` satisfies the Bugsnag interface.
+- You need it to build anywhere: no `unsafe`, no assembly, no architecture restrictions.
+
+### When to choose something else
+
+- You need error codes, attributes, hints, or PII-safe redaction: use cockroachdb/errors, ergo, or oops.
+- You want traces across goroutines and channels, where a stack trace loses the origin: errtrace's
+  return path model is built for that.
+- You want errors rendered as JSON with configurable formatting out of the box: eris.
+- You are willing to adopt panic-based control flow to shorten error handling: err2.
+
 ## Installation
 
 ```bash
